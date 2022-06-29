@@ -1,0 +1,115 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <assert.h>
+#define BUFF_SIZE 50
+#define M 10
+#define N 20
+int get_external_data(char *buffer, int bufferSizeInBytes);
+void process_data(char *buffer, int bufferSizeInBytes);
+int get_external_data(char *buffer, int bufferSizeInBytes){
+ int status;
+ int val;
+ char
+srcString[]="0123456789abcdefghijklmnopqrstuvwxyxABCDEFGHIJKLMNOPQRSTUVWXY
+Z";
+ val = (int)(rand() % 62);
+ if (bufferSizeInBytes < val){
+ return (-1);
+ }
+ strncpy(buffer, srcString, val);
+ return val;
+}
+void process_data(char *buffer, int bufferSizeInBytes){
+ int i;
+ if(buffer) {
+ printf("thread %li - ", pthread_self());
+ for(i = 0; i < bufferSizeInBytes; i++) {
+ printf("%c", buffer[i]);
+ }
+ printf("\n");
+ memset(buffer, 0, bufferSizeInBytes);
+ } else {
+ printf("error in process data - %li\n", pthread_self());
+ }
+ return;
+}
+pthread_mutex_t data_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t print_lock = PTHREAD_MUTEX_INITIALIZER;
+sem_t data_count;
+typedef struct node {
+ struct node *next;
+ char *data;
+ int length;
+} node_t;
+node_t *head, *tail;
+void *reader_thread(void *arg) {
+ int rc;
+ node_t *removed_node;
+ while(1) {
+ rc = sem_wait(&data_count);
+ if (0 != rc) {
+ return NULL;
+ }
+ pthread_mutex_lock(&data_lock);
+ assert(NULL != head);
+ removed_node = head;
+ head = head->next;
+ pthread_mutex_unlock(&data_lock);
+ //Adding this lock for sake of readability at the cost of reduced consumption rate...will run
+out of memory eventually.
+ pthread_mutex_lock(&print_lock);
+ process_data(removed_node->data, removed_node->length);
+ pthread_mutex_unlock(&print_lock);
+ free(removed_node->data);
+ free(removed_node);
+ }
+ return NULL;
+}
+void *writer_thread(void *arg) {
+ int length;
+ char *buffer;
+ node_t *new_node;
+ new_node = (node_t*) malloc(sizeof(*new_node));
+ buffer = (char*) malloc(sizeof(*buffer) * BUFF_SIZE);
+ while(1) {
+ length = get_external_data(buffer, BUFF_SIZE);
+if (length == -1) {
+ //data too big, discard it and try again;
+ continue;
+ }
+ new_node->next = NULL; new_node->length = length;
+ new_node->data = buffer;
+ pthread_mutex_lock(&data_lock);
+ if (head == NULL) { //The linked list is completely empty
+ head = new_node;
+ tail = new_node;
+ } else { //There are items in the list and we're appending
+ tail->next = new_node;
+ tail = new_node;
+ }
+ pthread_mutex_unlock(&data_lock);
+ pthread_mutex_lock(&print_lock);
+ printf("thread %ld wrote - %s \n", pthread_self(), buffer);
+ pthread_mutex_unlock(&print_lock);
+ sem_post(&data_count);
+ buffer = (char*) malloc(sizeof(*buffer) * BUFF_SIZE);
+ new_node = (node_t*) malloc(sizeof(*new_node));
+ }
+ return NULL;
+}
+int main(int argc, char **argv) {
+ int i = sem_init(&data_count, 0, 0);
+ pthread_t dummy; //creating a dummy thread
+ for(i = 0; i < N; i++) {
+ pthread_create(&dummy, NULL, reader_thread, NULL);
+ }
+ for(i = 0; i < M; i++) {
+ pthread_create(&dummy, NULL, writer_thread, NULL);
+ }
+ sleep(100);
+ return 0;
+}
