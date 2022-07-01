@@ -1,0 +1,12 @@
+import pandas as pd
+
+from sklearn.model_selection import train_test_split from sklearn.svm import SVC
+dataset_url	=
+"https://raw.githubusercontent.com/harika-bonthu/SupportVectorClassifier/main/datasets_22990 6_491820_Fish.csv";
+
+fish = pd.read_csv(dataset_url)
+
+X = fish.drop(['Species'], axis = 'columns') y = fish.Species
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size= 0.2) model = SVC(kernel = 'linear', C = 1)
+model.fit(X_train, y_train) svm_pred = model.predict(X_test)
+accuracy = model.score(X_test, y_test) print("Accuracy = ",accuracy*100)
