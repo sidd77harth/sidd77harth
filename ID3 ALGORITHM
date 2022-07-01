@@ -1,0 +1,46 @@
+import pandas as pd import math
+import numpy as np
+data = pd.read_csv(&quot;3-dataset.csv&quot;) features = [feat for feat in data] features.remove(&quot;answer&quot;)
+class Node:
+def     init (self): self.children = [] self.value = &quot;&quot; self.isLeaf = False self.pred = &quot;&quot;
+def entropy(examples): pos = 0.0
+neg = 0.0
+for _, row in examples.iterrows():
+if row[&quot;answer&quot;] == &quot;yes&quot;: pos += 1
+else:
+neg += 1
+if pos == 0.0 or neg == 0.0: return 0.0
+else:
+p = pos / (pos + neg) n = neg / (pos + neg)
+return -(p * math.log(p, 2) + n * math.log(n, 2)) def info_gain(examples, attr):
+uniq = np.unique(examples[attr]) #print (&quot;\n&quot;,uniq)
+ 
+gain = entropy(examples) #print (&quot;\n&quot;,gain) for u in uniq:
+subdata = examples[examples[attr] == u] #print (&quot;\n&quot;,subdata)
+sub_e = entropy(subdata)
+gain -= (float(len(subdata)) / float(len(examples))) * sub_e #print (&quot;\n&quot;,gain)
+return gain
+def ID3(examples, attrs): root = Node() max_gain = 0
+max_feat = &quot;&quot;
+
+for feature in attrs:
+#print (&quot;\n&quot;,examples) gain = info_gain(examples, feature) if gain &gt; max_gain:
+max_gain = gain max_feat = feature
+root.value = max_feat
+#print (&quot;\nMax feature attr&quot;,max_feat) uniq = np.unique(examples[max_feat])
+#print (&quot;\n&quot;,uniq) for u in uniq:
+#print (&quot;\n&quot;,u)
+subdata = examples[examples[max_feat] == u] #print (&quot;\n&quot;,subdata)
+if entropy(subdata) == 0.0: newNode = Node() newNode.isLeaf = True newNode.value = u
+newNode.pred = np.unique(subdata[&quot;answer&quot;]) root.children.append(newNode)
+else:
+dummyNode = Node() dummyNode.value = u new_attrs = attrs.copy() new_attrs.remove(max_feat) child = ID3(subdata, new_attrs)
+dummyNode.children.append(child) root.children.append(dummyNode)
+return root
+def printTree(root: Node, depth=0): for i in range(depth):
+print(&quot;\t&quot;, end=&quot;&quot;)
+ 
+print(root.value, end=&quot;&quot;) if root.isLeaf:
+print(&quot; -&gt; &quot;, root.pred) print()
+for child in root.children: printTree(child, depth + 1)
+root = ID3(data, features) printTree(root)
