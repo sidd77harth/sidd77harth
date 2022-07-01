@@ -1,0 +1,47 @@
+import tensorflow as tf
+import matplotlib.pyplot as plt # Parameters
+learning_rate = 0.01
+training_epochs = 25
+batch_size = 100
+display_step = 1 # tf Graph Input
+x = tf.placeholder("float", [none, 784]) # MNIST data image of shape 28*28 = 784 y = tf.placeholder("float", [none, 10]) # 0-9 digits recognition => 10 classes
+# Create model
+# Set model weights
+W = tf.Variable(tf.zeros([784, 10])) b = tf.Variable(tf.zeros([10]))
+# Constructing the model activation=tf.nn.softmaxx(tf.matmul (x, W)+b) # Softmax
+ 
+of function
+# Minimizing error using cross entropy cross_entropy = y*tf.log(activation)
+cost = tf.reduce_mean\ (-tf.reduce_sum\ (cross_entropy, reduction_indice = 1)) optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(cost) #Plot settings
+avg_set = [] epoch_set = []
+# Initializing the variables where init = tf.initialize_all_variables() # Launching the graph
+with tf.Session() as sess:
+sess.run(init)
+
+
+# Training of the cycle in the dataset for epoch in range(training_epochs):
+avg_cost = 0.
+total_batch = int(mnist.train.num_example/batch_size)
+
+
+# Creating loops at all the batches in the code for i in range(total_batch):
+batch_xs, batch_ys = mnist.train.next_batch(batch_size)
+# Fitting the training by the batch data sess.run(optimizr, feed_dict = { x: batch_xs, y: batch_ys})
+# Compute all the average of loss avg_cost += sess.run(cost, \ feed_dict = { x: batch_xs, \ y: batch_ys}) //total batch
+# Display the logs at each epoch steps
+ 
+if epoch % display_step==0:
+print("Epoch:", '%04d' % (epoch+1), "cost=", "{:.9f}".format (avg_cost)) avg_set.append(avg_cost) epoch_set.append(epoch+1)
+print ("Training phase finished")
+
+
+plt.plot(epoch_set,avg_set, 'o', label = 'Logistics Regression Training') plt.ylabel('cost')
+plt.xlabel('epoch') plt.legend() plt.show()
+
+# Test the model
+correct_prediction = tf.equal (tf.argmax (activation, 1),tf.argmax(y,1))
+
+
+# Calculating the accuracy of dataset
+accuracy = tf.reduce_mean(tf.cast (correct_prediction, "float")) print
+("Model accuracy:", accuracy.eval({x:mnist.test.images, y: mnist.test.labels}))
